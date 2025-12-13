@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LessonFormComponent } from '../lesson-form/lesson-form.component';
+import { LessonService } from '../services/lesson.service';
 import { Lesson } from './types';
 
 @Component({
@@ -10,10 +11,19 @@ import { Lesson } from './types';
   templateUrl: './schedule.component.html'
 })
 export class ScheduleComponent {
-  storageKey = 'scheduleapp.lessons';
-  lessons: Lesson[] = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+  lessons: Lesson[] = [];
   showForm = false;
   editing: Lesson | null = null;
+
+  constructor(private lessonService: LessonService) {}
+
+  ngOnInit() {
+    this.loadLessons();
+  }
+
+  loadLessons() {
+    this.lessons = this.lessonService.getLessons();
+  }
 
   toggleForm() {
     this.editing = null;
@@ -21,14 +31,8 @@ export class ScheduleComponent {
   }
 
   addOrUpdate(lesson: Lesson) {
-    if (lesson.id) {
-      const idx = this.lessons.findIndex(l => l.id === lesson.id);
-      if (idx >= 0) this.lessons[idx] = lesson;
-    } else {
-      lesson.id = Date.now().toString();
-      this.lessons.push(lesson);
-    }
-    localStorage.setItem(this.storageKey, JSON.stringify(this.lessons));
+    this.lessonService.saveLesson(lesson);
+    this.loadLessons(); // Перезагружаем список
     this.showForm = false;
   }
 
@@ -40,7 +44,7 @@ export class ScheduleComponent {
   remove(id?: string) {
     if (!id) return;
     if (!confirm('Удалить занятие?')) return;
-    this.lessons = this.lessons.filter(l => l.id !== id);
-    localStorage.setItem(this.storageKey, JSON.stringify(this.lessons));
+    this.lessonService.deleteLesson(id);
+    this.loadLessons(); // Перезагружаем список
   }
 }
